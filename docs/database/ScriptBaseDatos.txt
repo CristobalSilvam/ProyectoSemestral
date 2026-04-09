@@ -1,0 +1,172 @@
+--Script Base de datos SearchSport
+
+-- 1. ELIMINACIÓN DE TABLAS (Orden inverso por FK)
+SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS REVIEW;
+DROP TABLE IF EXISTS RESERVA;
+DROP TABLE IF EXISTS ESTADO_RESERVA;
+DROP TABLE IF EXISTS TARIFA;
+DROP TABLE IF EXISTS HORARIO_ESPECIAL;
+DROP TABLE IF EXISTS CANCHA;
+DROP TABLE IF EXISTS DEPORTE;
+DROP TABLE IF EXISTS IMAGEN;
+DROP TABLE IF EXISTS EMAIL;
+DROP TABLE IF EXISTS TELEFONO;
+DROP TABLE IF EXISTS RECINTO;
+DROP TABLE IF EXISTS DIRECCION;
+DROP TABLE IF EXISTS COORDENADA;
+DROP TABLE IF EXISTS COMUNA;
+DROP TABLE IF EXISTS REGION;
+DROP TABLE IF EXISTS USUARIO;
+DROP TABLE IF EXISTS ROL;
+SET FOREIGN_KEY_CHECKS = 1;
+
+-- 2. CREACIÓN DE TABLAS
+
+-- Cluster Geográfico
+CREATE TABLE REGION (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    nombre VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE COMUNA (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    nombre VARCHAR(50) NOT NULL,
+    region_id INT NOT NULL,
+    CONSTRAINT fk_comuna_region FOREIGN KEY (region_id) REFERENCES REGION(id)
+);
+
+CREATE TABLE COORDENADA (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    latitud DECIMAL(10, 8) NOT NULL,
+    longitud DECIMAL(11, 8) NOT NULL
+);
+
+CREATE TABLE DIRECCION (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    calle VARCHAR(100) NOT NULL,
+    numero INT NOT NULL,
+    coordenada_id INT NOT NULL,
+    comuna_id INT NOT NULL,
+    CONSTRAINT fk_dir_coordenada FOREIGN KEY (coordenada_id) REFERENCES COORDENADA(id),
+    CONSTRAINT fk_dir_comuna FOREIGN KEY (comuna_id) REFERENCES COMUNA(id)
+);
+
+-- Cluster de Seguridad y Usuarios
+CREATE TABLE ROL (
+    id_rol INT PRIMARY KEY AUTO_INCREMENT,
+    nombre VARCHAR(50) NOT NULL -- ROLE_USER, ROLE_ADMIN, ROLE_OWNER
+);
+
+CREATE TABLE USUARIO (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    rut VARCHAR(15) UNIQUE NOT NULL,
+    nombre VARCHAR(50) NOT NULL,
+    segundo_nombre VARCHAR(50),
+    apellido_paterno VARCHAR(50) NOT NULL,
+    apellido_materno VARCHAR(50),
+    email_principal VARCHAR(100) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    rol_id INT NOT NULL,
+    CONSTRAINT fk_usuario_rol FOREIGN KEY (rol_id) REFERENCES ROL(id_rol)
+);
+
+-- Cluster de Infraestructura (Recinto y Canchas)
+CREATE TABLE RECINTO (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    nombre VARCHAR(100) NOT NULL,
+    rut_empresa VARCHAR(20) NOT NULL,
+    direccion_id INT NOT NULL,
+    CONSTRAINT fk_recinto_direccion FOREIGN KEY (direccion_id) REFERENCES DIRECCION(id)
+);
+
+CREATE TABLE DEPORTE (
+    id_deporte INT PRIMARY KEY AUTO_INCREMENT,
+    nombre VARCHAR(50) NOT NULL -- Futbol, Padel, Tenis, Natacion
+);
+
+CREATE TABLE CANCHA (
+    id_cancha INT PRIMARY KEY AUTO_INCREMENT,
+    nombre_interno VARCHAR(50) NOT NULL,
+    es_techada TINYINT(1) DEFAULT 0, -- 0: No, 1: Si
+    tipo_superficie VARCHAR(30), -- Pasto, Arcilla, etc.
+    recinto_id INT NOT NULL,
+    deporte_id INT NOT NULL,
+    CONSTRAINT fk_cancha_recinto FOREIGN KEY (recinto_id) REFERENCES RECINTO(id),
+    CONSTRAINT fk_cancha_deporte FOREIGN KEY (deporte_id) REFERENCES DEPORTE(id_deporte)
+);
+
+-- Cluster de Contacto y Multimedia
+CREATE TABLE EMAIL (
+    id_email INT PRIMARY KEY AUTO_INCREMENT,
+    correo VARCHAR(100) NOT NULL,
+    es_principal TINYINT(1) DEFAULT 0,
+    recinto_id INT,
+    usuario_id INT,
+    CONSTRAINT fk_email_recinto FOREIGN KEY (recinto_id) REFERENCES RECINTO(id),
+    CONSTRAINT fk_email_usuario FOREIGN KEY (usuario_id) REFERENCES USUARIO(id)
+);
+
+CREATE TABLE TELEFONO (
+    id_telefono INT PRIMARY KEY AUTO_INCREMENT,
+    numero VARCHAR(20) NOT NULL,
+    tipo VARCHAR(20), -- Movil, Fijo, WhatsApp
+    recinto_id INT,
+    usuario_id INT,
+    CONSTRAINT fk_telef_recinto FOREIGN KEY (recinto_id) REFERENCES RECINTO(id),
+    CONSTRAINT fk_telef_usuario FOREIGN KEY (usuario_id) REFERENCES USUARIO(id)
+);
+
+CREATE TABLE IMAGEN (
+    id_img INT PRIMARY KEY AUTO_INCREMENT,
+    url VARCHAR(255) NOT NULL,
+    recinto_id INT NOT NULL,
+    CONSTRAINT fk_img_recinto FOREIGN KEY (recinto_id) REFERENCES RECINTO(id)
+);
+
+-- Cluster de Negocio (Tarifas y Reservas)
+CREATE TABLE TARIFA (
+    id_tarifa INT PRIMARY KEY AUTO_INCREMENT,
+    dia_semana TINYINT NOT NULL, -- 1 (Lunes) a 7 (Domingo)
+    hora_inicio TIME NOT NULL,
+    hora_fin TIME NOT NULL,
+    precio DECIMAL(10, 2) NOT NULL,
+    cancha_id INT NOT NULL,
+    CONSTRAINT fk_tarifa_cancha FOREIGN KEY (cancha_id) REFERENCES CANCHA(id_cancha)
+);
+
+CREATE TABLE HORARIO_ESPECIAL (
+    id_he INT PRIMARY KEY AUTO_INCREMENT,
+    fecha DATE NOT NULL,
+    motivo VARCHAR(100),
+    esta_bloqueado TINYINT(1) DEFAULT 1,
+    cancha_id INT NOT NULL,
+    CONSTRAINT fk_he_cancha FOREIGN KEY (cancha_id) REFERENCES CANCHA(id_cancha)
+);
+
+CREATE TABLE ESTADO_RESERVA (
+    id_estado INT PRIMARY KEY AUTO_INCREMENT,
+    descripcion VARCHAR(50) NOT NULL -- Pagada, Pendiente, Cancelada
+);
+
+CREATE TABLE REVIEW (
+    id_review INT PRIMARY KEY AUTO_INCREMENT,
+    puntaje TINYINT NOT NULL CHECK (puntaje BETWEEN 1 AND 5),
+    comentario TEXT
+);
+
+CREATE TABLE RESERVA (
+    id_reserva INT PRIMARY KEY AUTO_INCREMENT,
+    fecha_uso DATE NOT NULL,
+    hora_inicio TIME NOT NULL,
+    hora_fin TIME NOT NULL,
+    monto_total DECIMAL(10, 2) NOT NULL,
+    cancha_id INT NOT NULL,
+    usuario_id INT NOT NULL,
+    estado_id INT NOT NULL,
+    review_id INT UNIQUE,
+    CONSTRAINT fk_res_cancha FOREIGN KEY (cancha_id) REFERENCES CANCHA(id_cancha),
+    CONSTRAINT fk_res_usuario FOREIGN KEY (usuario_id) REFERENCES USUARIO(id),
+    CONSTRAINT fk_res_estado FOREIGN KEY (estado_id) REFERENCES ESTADO_RESERVA(id_estado),
+    CONSTRAINT fk_res_review FOREIGN KEY (review_id) REFERENCES REVIEW(id_review)
+);
