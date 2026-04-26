@@ -29,5 +29,27 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
+# Java y Maven
+target/
+*.class
+*.jar
+*.war
+
+# IDEs
+.settings/
+.classpath
+.project
+.factorypath
+.idea/
+*.iml
+.vscode/
+
+# Tu carpeta de imágenes (No se suben a Git)
+uploads/
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+
 ### VS Code ###
 .vscode/

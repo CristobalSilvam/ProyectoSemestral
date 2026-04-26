@@ -1,5 +1,7 @@
 package com.example.searchsport.dto;
 
+import java.math.BigDecimal;
+
 import lombok.Data;
 
 @Data
@@ -12,5 +14,8 @@ public class RecintoRequest {
     private String calle;
     private Integer numero;
     private String region;
-    private Long comunaId;
+    private String comuna;
+    // Datos para las coordenadas
+    private BigDecimal latitud;
+    private BigDecimal longitud;
 }

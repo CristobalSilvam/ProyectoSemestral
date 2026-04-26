@@ -1,5 +1,6 @@
 package com.example.searchsport.controller;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.searchsport.dto.RecintoMapaDTO;
 import com.example.searchsport.entity.Recinto;
 import com.example.searchsport.service.RecintoService;
 
@@ -27,13 +29,13 @@ public class RecintoController {
     }
 
     // Endpoint: GET /api/recintos/search?deporte=&precioMax=
-    // Aquí dejaremos el esqueleto listo para lo que me comentaste en tu documento
+    // Búsqueda dinámica para el mapa
     @GetMapping("/search")
-    public ResponseEntity<?> buscarRecintos(
+    public ResponseEntity<List<RecintoMapaDTO>> buscarRecintos(
             @RequestParam(required = false) String deporte,
-            @RequestParam(required = false) Double precioMax) {
+            @RequestParam(required = false) BigDecimal precioMax) {
         
-        // TODO: Implementar la lógica de búsqueda con coordenadas, filtros, etc.
-        return ResponseEntity.ok("Búsqueda en construcción. Deporte: " + deporte + ", Precio Max: " + precioMax);
+        List<RecintoMapaDTO> resultados = recintoService.buscarParaMapa(deporte, precioMax);
+        return ResponseEntity.ok(resultados);
     }
 }

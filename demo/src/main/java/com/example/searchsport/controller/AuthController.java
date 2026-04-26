@@ -2,10 +2,10 @@ package com.example.searchsport.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager; // NUEVO
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken; // NUEVO
-import org.springframework.security.core.Authentication; // NUEVO
-import org.springframework.security.core.context.SecurityContextHolder; // NUEVO
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken; 
+import org.springframework.security.core.Authentication; //
+import org.springframework.security.core.context.SecurityContextHolder; 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -14,9 +14,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.searchsport.dto.AuthResponse;
 import com.example.searchsport.dto.LoginRequest;
-import com.example.searchsport.dto.RegisterRequest; // NUEVO
+import com.example.searchsport.dto.RegisterRequest; 
 import com.example.searchsport.entity.Rol;
 import com.example.searchsport.entity.Usuario;
+import com.example.searchsport.repository.RolRepository;
 import com.example.searchsport.repository.UsuarioRepository;
 import com.example.searchsport.util.JwtUtil;
 
@@ -30,19 +31,19 @@ public class AuthController {
     @Autowired
     private JwtUtil jwtUtil;
 
-    // --- NUEVAS INYECCIONES ---
     @Autowired
     private UsuarioRepository usuarioRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
-    // --------------------------
 
-    // NUEVO ENDPOINT DE REGISTRO
+    @Autowired
+    private RolRepository rolRepository; 
+
+    // ENDPOINT DE REGISTRO
     @PostMapping("/register")
     public ResponseEntity<?> registrar(@RequestBody RegisterRequest request) {
         
-        // Verificamos si el email ya existe
         if (usuarioRepository.findByEmail(request.getEmail()).isPresent()) {
             return ResponseEntity.badRequest().body("El email ya está registrado");
         }
@@ -55,21 +56,17 @@ public class AuthController {
         nuevoUsuario.setApellidoMaterno(request.getApellidoMaterno());
         nuevoUsuario.setEmail(request.getEmail());
         nuevoUsuario.setPassword(passwordEncoder.encode(request.getPassword()));
-        
-        // Spring encripta la contraseña perfectamente
-        nuevoUsuario.setPassword(passwordEncoder.encode(request.getPassword()));
 
-        // Le asignamos el rol por defecto (1 = Cliente)
-        // Le asignamos el rol
-        Rol rolCliente = new Rol();
-        rolCliente.setIdRol(1L); // O setId_rol(1L) dependiendo de cómo lo tengas en Rol.java
+        // BUSCAMOS EL ROL EN LA BD 
+        Rol rolCliente = rolRepository.findById(1L)
+            .orElseThrow(() -> new RuntimeException("Error: Rol no encontrado en la base de datos."));
         nuevoUsuario.setRol(rolCliente);
 
         usuarioRepository.save(nuevoUsuario);
 
         return ResponseEntity.ok("Usuario registrado exitosamente");
     }
-
+    
     // Login
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest loginRequest) {

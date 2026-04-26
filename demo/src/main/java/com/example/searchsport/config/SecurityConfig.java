@@ -11,22 +11,30 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+import com.example.searchsport.security.JwtAuthenticationFilter;
+
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+     @Autowired
+    private JwtAuthenticationFilter jwtAuthFilter;
 
-    @Bean
+     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(AbstractHttpConfigurer::disable) // Desactivamos CSRF porque usaremos tokens
+            .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**", "/error").permitAll() // Endpoint de login y registro serán PÚBLICOS
-                .anyRequest().authenticated() // Cualquier otra petición (como /api/recintos) requiere estar logueado
+                .requestMatchers("/api/auth/**", "/error", "/uploads/**").permitAll() 
+                .anyRequest().authenticated() 
             )
-            .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+            .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            // LÍNEA PARA ACTIVAR EL FILTRO:
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
-        // En el próximo paso agregaremos el filtro JWT aquí
         return http.build();
     }
 
