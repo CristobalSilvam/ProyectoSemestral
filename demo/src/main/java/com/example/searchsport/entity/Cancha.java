@@ -1,5 +1,7 @@
 package com.example.searchsport.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -11,7 +13,6 @@ import jakarta.persistence.Table;
 import lombok.Data;
 
 @Entity
-
 @Table(name = "CANCHA")
 @Data
 public class Cancha {
@@ -32,6 +33,7 @@ public class Cancha {
 
     @ManyToOne
     @JoinColumn(name = "recinto_id", nullable = false)
+    @JsonIgnoreProperties({"canchas"})
     private Recinto recinto;
 
     @ManyToOne

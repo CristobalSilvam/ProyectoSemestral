@@ -1,6 +1,6 @@
---Script Base de datos SearchSport
-
+-- Script Base de datos SearchSport
 -- 1. ELIMINACIÓN DE TABLAS (Orden inverso por FK)
+
 SET FOREIGN_KEY_CHECKS = 0;
 DROP TABLE IF EXISTS REVIEW;
 DROP TABLE IF EXISTS RESERVA;
