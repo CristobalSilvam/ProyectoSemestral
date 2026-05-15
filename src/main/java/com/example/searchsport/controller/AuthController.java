@@ -70,6 +70,7 @@ public class AuthController {
     // Login
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest loginRequest) {
+        // 1. Autenticar las credenciales
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         loginRequest.getEmail(),
@@ -78,7 +79,17 @@ public class AuthController {
         );
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
+        
+        // 2. Generar el Token
         String token = jwtUtil.generarToken(loginRequest.getEmail());
-        return ResponseEntity.ok(new AuthResponse(token));
+        
+        // 3. Buscar al usuario autenticado para obtener su rol
+        Usuario usuarioAutenticado = usuarioRepository.findByEmail(loginRequest.getEmail())
+            .orElseThrow(() -> new RuntimeException("Usuario no encontrado en la base de datos"));
+            
+        Long idRol = usuarioAutenticado.getRol().getIdRol();
+
+        // 4. Devolver ambas cosas al Frontend
+        return ResponseEntity.ok(new AuthResponse(token, idRol));
     }
 }

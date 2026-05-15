@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 import com.example.searchsport.entity.Cancha;
 
 @Repository
-public interface CanchaRepository extends JpaRepository<Cancha, Integer> {
-    List<Cancha> findByRecintoId(Integer recintoId);
+public interface CanchaRepository extends JpaRepository<Cancha, Long> {
+
+    List<Cancha> findByRecintoId(Long recintoId);
 }
