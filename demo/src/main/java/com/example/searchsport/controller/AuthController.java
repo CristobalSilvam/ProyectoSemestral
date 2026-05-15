@@ -1,20 +1,21 @@
 package com.example.searchsport.controller;
 
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken; 
-import org.springframework.security.core.Authentication; //
-import org.springframework.security.core.context.SecurityContextHolder; 
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.searchsport.dto.AuthResponse;
 import com.example.searchsport.dto.LoginRequest;
-import com.example.searchsport.dto.RegisterRequest; 
+import com.example.searchsport.dto.RegisterRequest;
 import com.example.searchsport.entity.Rol;
 import com.example.searchsport.entity.Usuario;
 import com.example.searchsport.repository.RolRepository;
@@ -38,14 +39,15 @@ public class AuthController {
     private PasswordEncoder passwordEncoder;
 
     @Autowired
-    private RolRepository rolRepository; 
+    private RolRepository rolRepository;
 
-    // ENDPOINT DE REGISTRO
     @PostMapping("/register")
     public ResponseEntity<?> registrar(@RequestBody RegisterRequest request) {
-        
+
         if (usuarioRepository.findByEmail(request.getEmail()).isPresent()) {
-            return ResponseEntity.badRequest().body("El email ya está registrado");
+            return ResponseEntity.badRequest().body(
+                    Map.of("message", "El correo ya está registrado")
+            );
         }
 
         Usuario nuevoUsuario = new Usuario();
@@ -57,19 +59,22 @@ public class AuthController {
         nuevoUsuario.setEmail(request.getEmail());
         nuevoUsuario.setPassword(passwordEncoder.encode(request.getPassword()));
 
-        // BUSCAMOS EL ROL EN LA BD 
+        // Rol 1 = Cliente / Usuario normal
         Rol rolCliente = rolRepository.findById(1L)
-            .orElseThrow(() -> new RuntimeException("Error: Rol no encontrado en la base de datos."));
+                .orElseThrow(() -> new RuntimeException("Error: Rol no encontrado en la base de datos."));
+
         nuevoUsuario.setRol(rolCliente);
 
         usuarioRepository.save(nuevoUsuario);
 
-        return ResponseEntity.ok("Usuario registrado exitosamente");
+        return ResponseEntity.ok(
+                Map.of("message", "Usuario registrado exitosamente")
+        );
     }
-    
-    // Login
+
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
+
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         loginRequest.getEmail(),
@@ -78,7 +83,26 @@ public class AuthController {
         );
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        String token = jwtUtil.generarToken(loginRequest.getEmail());
-        return ResponseEntity.ok(new AuthResponse(token));
+
+        Usuario usuario = usuarioRepository.findByEmail(loginRequest.getEmail())
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        String token = jwtUtil.generarToken(usuario.getEmail());
+
+        Long idRol = usuario.getRol().getIdRol();
+        String nombreRol = usuario.getRol().getNombre();
+
+        return ResponseEntity.ok(
+                Map.of(
+                        "token", token,
+                        "email", usuario.getEmail(),
+                        "nombre", usuario.getNombre(),
+                        "rut", usuario.getRut(),
+                        "idRol", idRol,
+                        "id_rol", idRol,
+                        "rol", nombreRol,
+                        "role", nombreRol
+                )
+        );
     }
 }
