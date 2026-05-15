@@ -75,7 +75,7 @@ public class SecurityConfig {
 
         configuration.setAllowedOrigins(List.of(
                 "http://localhost:3000",
-                "https://front-taller.vercel.app/"
+                "https://front-taller.vercel.app"
         ));
 
         configuration.setAllowedMethods(List.of(
