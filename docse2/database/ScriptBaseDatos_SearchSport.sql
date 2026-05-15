@@ -406,3 +406,33 @@ CREATE TABLE `rol` (
 LOCK TABLES `rol` WRITE;
 /*!40000 ALTER TABLE `rol` DISABLE KEYS */;
 INSERT INTO `rol` VALUES (1,'CLIENTE'),(2,'DUENO'),(3,'ADMIN');
+/*!40000 ALTER TABLE `rol` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `tarifa`
+--
+
+DROP TABLE IF EXISTS `tarifa`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `tarifa` (
+  `id_tarifa` bigint NOT NULL AUTO_INCREMENT,
+  `dia_semana` tinyint NOT NULL,
+  `hora_fin` time(6) NOT NULL,
+  `hora_inicio` time(6) NOT NULL,
+  `precio` decimal(10,2) NOT NULL,
+  `cancha_id` bigint NOT NULL,
+  PRIMARY KEY (`id_tarifa`),
+  KEY `FK5igfwy6eeg8y1ejjb5g24k6x4` (`cancha_id`),
+  CONSTRAINT `FK5igfwy6eeg8y1ejjb5g24k6x4` FOREIGN KEY (`cancha_id`) REFERENCES `cancha` (`id_cancha`)
+) ENGINE=InnoDB AUTO_INCREMENT=18 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `tarifa`
+--
+
+LOCK TABLES `tarifa` WRITE;
+/*!40000 ALTER TABLE `tarifa` DISABLE KEYS */;
+INSERT INTO `tarifa` VALUES (1,1,'19:00:00.000000','18:00:00.000000',28000.00,1),(2,1,'20:00:00.000000','19:00:00.000000',30000.00,1),(3,2,'19:00:00.000000','18:00:00.000000',28000.00,1),(4,3,'21:00:00.000000','20:00:00.000000',32000.00,1),(5,6,'11:00:00.000000','10:00:00.000000',35000.00,1),(6,1,'19:00:00.000000','18:00:00.000000',32000.00,2),(7,2,'20:00:00.000000','19:00:00.000000',32000.00,2),(8,5,'21:00:00.000000','20:00:00.000000',35000.00,2),(9,6,'12:00:00.000000','11:00:00.000000',38000.00,2),(10,1,'19:00:00.000000','18:00:00.000000',40000.00,3),(11,3,'20:00:00.000000','19:00:00.000000',42000.00,3),(12,5,'21:00:00.000000','20:00:00.000000',45000.00,3),(13,6,'13:00:00.000000','12:00:00.000000',48000.00,3),(14,2,'19:00:00.000000','18:00:00.000000',36000.00,4),(15,4,'20:00:00.000000','19:00:00.000000',38000.00,4),(16,5,'22:00:00.000000','21:00:00.000000',40000.00,4),(17,7,'11:00:00.000000','10:00:00.000000',42000.00,4);
