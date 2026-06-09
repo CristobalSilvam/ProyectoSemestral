@@ -11,4 +11,5 @@ public class RegisterRequest {
     private String apellidoMaterno;
     private String email;
     private String password;
+    private Long idRol;
 }

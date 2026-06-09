@@ -51,6 +51,10 @@ public class RecintoService {
         return recintoRepository.findById(id);
     }
 
+    public Recinto guardar(Recinto recinto) {
+    return recintoRepository.save(recinto);
+}
+
     @Transactional
     public Recinto crearRecinto(RecintoRequest request) {
         Coordenada coord = new Coordenada();

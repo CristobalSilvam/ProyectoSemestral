@@ -10,9 +10,12 @@ import com.example.searchsport.dto.RecintoMapaDTO;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface RecintoRepository extends JpaRepository<Recinto, Long> {
+
+
     @Query("SELECT new com.example.searchsport.dto.RecintoMapaDTO(" +
            "r.id, r.nombre, coord.latitud, coord.longitud, MIN(t.precio)) " +
            "FROM Tarifa t " +
@@ -27,4 +30,6 @@ public interface RecintoRepository extends JpaRepository<Recinto, Long> {
     List<RecintoMapaDTO> buscarRecintosParaMapa(
             @Param("deporte") String deporte, 
             @Param("precioMax") BigDecimal precioMax);
+       
+       Optional<Recinto> findByUsuario_Id(Long usuarioId);
 }

@@ -48,6 +48,14 @@ public class AuthController {
             return ResponseEntity.badRequest().body("El email ya está registrado");
         }
 
+        // --- NUEVA VALIDACIÓN DE SEGURIDAD ---
+        Long rolSolicitado = request.getIdRol();
+        // Si no manda rol, o manda un rol que no es 1 (Cliente) ni 2 (Dueño), lo rechazamos.
+        // ¡Esto evita que alguien se registre como Admin (3)!
+        if (rolSolicitado == null || (rolSolicitado != 1L && rolSolicitado != 2L)) {
+            return ResponseEntity.badRequest().body("Rol inválido. Solo puedes registrarte como Cliente o Dueño.");
+        }
+
         Usuario nuevoUsuario = new Usuario();
         nuevoUsuario.setRut(request.getRut());
         nuevoUsuario.setNombre(request.getNombre());
@@ -57,16 +65,15 @@ public class AuthController {
         nuevoUsuario.setEmail(request.getEmail());
         nuevoUsuario.setPassword(passwordEncoder.encode(request.getPassword()));
 
-        // BUSCAMOS EL ROL EN LA BD 
-        Rol rolCliente = rolRepository.findById(1L)
+        // BUSCAMOS EL ROL SOLICITADO EN LA BD 
+        Rol rolAsignar = rolRepository.findById(rolSolicitado)
             .orElseThrow(() -> new RuntimeException("Error: Rol no encontrado en la base de datos."));
-        nuevoUsuario.setRol(rolCliente);
+        nuevoUsuario.setRol(rolAsignar);
 
         usuarioRepository.save(nuevoUsuario);
 
         return ResponseEntity.ok("Usuario registrado exitosamente");
     }
-    
     // Login
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest loginRequest) {

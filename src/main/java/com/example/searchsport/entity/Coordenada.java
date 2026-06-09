@@ -24,4 +24,4 @@ public class Coordenada {
 
     @Column(nullable = false, precision = 11, scale = 8)
     private BigDecimal longitud;
-}
+}   

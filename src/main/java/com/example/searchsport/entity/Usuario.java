@@ -40,7 +40,11 @@ public class Usuario {
     @Column(name = "password_hash", nullable = false, length = 255)
     private String password;
 
+    @Column(name = "activo")
+    private Boolean activo = true;
+
     @ManyToOne
     @JoinColumn(name = "rol_id", nullable = false)
     private Rol rol;
+
 }
