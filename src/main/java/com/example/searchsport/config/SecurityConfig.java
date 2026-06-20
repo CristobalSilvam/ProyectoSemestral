@@ -60,6 +60,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/comunas/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/canchas/**").permitAll()
 
+                        // Rutas admin: solo usuarios con rol ADMIN
+                        .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
+
                         // Todo lo demás requiere login/token
                         .anyRequest().authenticated()
                 )
@@ -75,7 +78,7 @@ public class SecurityConfig {
 
         configuration.setAllowedOrigins(List.of(
                 "http://localhost:3000",
-                "https://front-taller.vercel.app/"
+                "https://front-taller.vercel.app"
         ));
 
         configuration.setAllowedMethods(List.of(
