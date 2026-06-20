@@ -28,38 +28,46 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private CustomUserDetailsService customUserDetailsService;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-            throws ServletException, IOException {
-        
-        // 1. Obtener el header de autorización
-        final String authHeader = request.getHeader("Authorization");
-        final String jwt;
-        final String userEmail;
+    protected void doFilterInternal(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain filterChain
+    ) throws ServletException, IOException {
 
-        // 2. Validar que el header exista y empiece con "Bearer "
+        final String authHeader = request.getHeader("Authorization");
+
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        // 3. Extraer el token (quitando "Bearer ")
-        jwt = authHeader.substring(7);
-        userEmail = jwtUtil.extraerEmail(jwt);
+        try {
+            final String jwt = authHeader.substring(7);
+            final String userEmail = jwtUtil.extraerEmail(jwt);
 
-        // 4. Si hay email y no hay autenticación en el contexto actual
-        if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = this.customUserDetailsService.loadUserByUsername(userEmail);
+            if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                UserDetails userDetails = customUserDetailsService.loadUserByUsername(userEmail);
 
-            // 5. Validar el token
-            if (jwtUtil.validarToken(jwt, userDetails.getUsername())) {
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                        userDetails, null, userDetails.getAuthorities());
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                
-                // 6. Asignar la autenticación al contexto de Spring Security
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+                if (jwtUtil.validarToken(jwt, userDetails.getUsername())) {
+                    UsernamePasswordAuthenticationToken authToken =
+                            new UsernamePasswordAuthenticationToken(
+                                    userDetails,
+                                    null,
+                                    userDetails.getAuthorities()
+                            );
+
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                }
             }
+
+            filterChain.doFilter(request, response);
+
+        } catch (Exception e) {
+            SecurityContextHolder.clearContext();
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"error\":\"Token invalido o expirado\"}");
         }
-        filterChain.doFilter(request, response);
     }
 }
