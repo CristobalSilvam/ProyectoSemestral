@@ -9,15 +9,15 @@ import jakarta.persistence.Table;
 import lombok.Data;
 
 @Entity
-@Table(name = "ROL")
-@Data //Getters y Setters 
+@Table(name = "rol")
+@Data
 public class Rol {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id_rol")
+    @Column(name = "id")
     private Long idRol;
 
     @Column(nullable = false, length = 20)
-    private String nombre; // Cliente, Dueno, Admin
+    private String nombre;
 }

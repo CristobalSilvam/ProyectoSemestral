@@ -12,7 +12,7 @@ import lombok.Data;
 
 @Data
 @Entity
-@Table(name = "USUARIO")
+@Table(name = "usuario")
 public class Usuario {
 
     @Id
@@ -26,16 +26,16 @@ public class Usuario {
     private String nombre;
 
     @Column(name = "segundo_nombre", length = 50)
-    private String segundoNombre; 
+    private String segundoNombre;
 
     @Column(name = "apellido_paterno", nullable = false, length = 50)
     private String apellidoPaterno;
 
     @Column(name = "apellido_materno", length = 50)
-    private String apellidoMaterno; 
+    private String apellidoMaterno;
 
     @Column(name = "email_principal", unique = true, nullable = false, length = 100)
-    private String email; 
+    private String email;
 
     @Column(name = "password_hash", nullable = false, length = 255)
     private String password;
@@ -46,5 +46,4 @@ public class Usuario {
     @ManyToOne
     @JoinColumn(name = "rol_id", nullable = false)
     private Rol rol;
-
 }
