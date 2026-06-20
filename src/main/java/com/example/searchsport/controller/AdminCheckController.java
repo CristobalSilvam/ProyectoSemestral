@@ -1,5 +1,6 @@
 package com.example.searchsport.controller;
 
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
@@ -14,10 +15,15 @@ public class AdminCheckController {
 
     @GetMapping("/check")
     public ResponseEntity<Map<String, Object>> checkAdmin(Authentication authentication) {
+        List<String> authorities = authentication.getAuthorities()
+                .stream()
+                .map(authority -> authority.getAuthority())
+                .toList();
+
         return ResponseEntity.ok(Map.of(
                 "ok", true,
                 "usuario", authentication.getName(),
-                "authorities", authentication.getAuthorities()
+                "authorities", authorities
         ));
     }
 }
