@@ -76,3 +76,10 @@ demo/
 │   │       └── application.properties
 ├── pom.xml
 └── DockerFile
+
+correr spring boot en local
+./mvnw spring-boot:run
+
+test mockito
+./mvnw test
+

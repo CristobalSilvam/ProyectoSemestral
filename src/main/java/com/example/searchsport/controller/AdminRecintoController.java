@@ -1,23 +1,30 @@
 package com.example.searchsport.controller;
 
-import com.example.searchsport.entity.Cancha;
+import com.example.searchsport.entity.Comuna;
+import com.example.searchsport.entity.Direccion;
 import com.example.searchsport.entity.Recinto;
+import com.example.searchsport.entity.Region;
+import com.example.searchsport.entity.Usuario;
 import com.example.searchsport.repository.RecintoRepository;
+import com.example.searchsport.repository.UsuarioRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin/recintos")
-@CrossOrigin(origins = "*")
 public class AdminRecintoController {
 
     private final RecintoRepository recintoRepository;
+    private final UsuarioRepository usuarioRepository;
 
-    public AdminRecintoController(RecintoRepository recintoRepository) {
+    public AdminRecintoController(
+            RecintoRepository recintoRepository,
+            UsuarioRepository usuarioRepository
+    ) {
         this.recintoRepository = recintoRepository;
+        this.usuarioRepository = usuarioRepository;
     }
 
     @GetMapping
@@ -31,50 +38,51 @@ public class AdminRecintoController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> editarRecinto(
+    public ResponseEntity<RecintoResponse> actualizarRecinto(
             @PathVariable Long id,
-            @RequestBody EditarRecintoRequest request
+            @RequestBody RecintoUpdateRequest request
     ) {
         Recinto recinto = recintoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Recinto no encontrado"));
 
         recinto.setNombre(request.getNombre());
         recinto.setRutEmpresa(request.getRutEmpresa());
-        recinto.setAprobado(request.getAprobado());
+        recinto.setAprobado(Boolean.TRUE.equals(request.getAprobado()));
 
-        recintoRepository.save(recinto);
+        if (request.getUsuarioId() == null) {
+            recinto.setUsuario(null);
+        } else {
+            Usuario usuario = usuarioRepository.findById(request.getUsuarioId())
+                    .orElseThrow(() -> new RuntimeException("Usuario dueño no encontrado"));
 
-        return ResponseEntity.ok(new RecintoResponse(recinto));
+            recinto.setUsuario(usuario);
+        }
+
+        Recinto actualizado = recintoRepository.save(recinto);
+
+        return ResponseEntity.ok(new RecintoResponse(actualizado));
     }
 
     @PatchMapping("/{id}/aprobado")
-    public ResponseEntity<?> cambiarEstadoAprobacion(
+    public ResponseEntity<RecintoResponse> cambiarAprobacion(
             @PathVariable Long id,
-            @RequestBody CambiarAprobacionRequest request
+            @RequestBody AprobacionRequest request
     ) {
         Recinto recinto = recintoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Recinto no encontrado"));
 
-        recinto.setAprobado(request.getAprobado());
-        recintoRepository.save(recinto);
+        recinto.setAprobado(Boolean.TRUE.equals(request.getAprobado()));
 
-        return ResponseEntity.ok(new RecintoResponse(recinto));
+        Recinto actualizado = recintoRepository.save(recinto);
+
+        return ResponseEntity.ok(new RecintoResponse(actualizado));
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> eliminarRecinto(@PathVariable Long id) {
-        Recinto recinto = recintoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Recinto no encontrado"));
-
-        recintoRepository.delete(recinto);
-
-        return ResponseEntity.noContent().build();
-    }
-
-    public static class EditarRecintoRequest {
+    public static class RecintoUpdateRequest {
         private String nombre;
         private String rutEmpresa;
         private Boolean aprobado;
+        private Long usuarioId;
 
         public String getNombre() {
             return nombre;
@@ -99,9 +107,17 @@ public class AdminRecintoController {
         public void setAprobado(Boolean aprobado) {
             this.aprobado = aprobado;
         }
+
+        public Long getUsuarioId() {
+            return usuarioId;
+        }
+
+        public void setUsuarioId(Long usuarioId) {
+            this.usuarioId = usuarioId;
+        }
     }
 
-    public static class CambiarAprobacionRequest {
+    public static class AprobacionRequest {
         private Boolean aprobado;
 
         public Boolean getAprobado() {
@@ -118,55 +134,67 @@ public class AdminRecintoController {
         private String nombre;
         private String rutEmpresa;
         private Boolean aprobado;
-
+        private Long usuarioId;
+        private String usuarioNombre;
+        private String usuarioEmail;
         private String calle;
-        private Integer numero;
+        private String numero;
         private String comuna;
         private String region;
-        private BigDecimal latitud;
-        private BigDecimal longitud;
-
-        private Long usuarioId;
-        private String usuarioEmail;
-        private String usuarioNombre;
-
         private Integer cantidadCanchas;
 
         public RecintoResponse(Recinto recinto) {
             this.id = recinto.getId();
             this.nombre = recinto.getNombre();
             this.rutEmpresa = recinto.getRutEmpresa();
-            this.aprobado = recinto.getAprobado();
+            this.aprobado = Boolean.TRUE.equals(recinto.getAprobado());
 
-            if (recinto.getDireccion() != null) {
-                this.calle = recinto.getDireccion().getCalle();
-                this.numero = recinto.getDireccion().getNumero();
+            Usuario usuario = recinto.getUsuario();
 
-                if (recinto.getDireccion().getComuna() != null) {
-                    this.comuna = recinto.getDireccion().getComuna().getNombre();
+            if (usuario != null) {
+                this.usuarioId = usuario.getId();
+                this.usuarioNombre = nombreCompleto(usuario);
+                this.usuarioEmail = usuario.getEmail();
+            }
 
-                    if (recinto.getDireccion().getComuna().getRegion() != null) {
-                        this.region = recinto.getDireccion().getComuna().getRegion().getNombre();
+            Direccion direccion = recinto.getDireccion();
+
+            if (direccion != null) {
+                this.calle = direccion.getCalle();
+
+                if (direccion.getNumero() != null) {
+                    this.numero = String.valueOf(direccion.getNumero());
+                }
+
+                Comuna comunaEntity = direccion.getComuna();
+
+                if (comunaEntity != null) {
+                    this.comuna = comunaEntity.getNombre();
+
+                    Region regionEntity = comunaEntity.getRegion();
+
+                    if (regionEntity != null) {
+                        this.region = regionEntity.getNombre();
                     }
                 }
-
-                if (recinto.getDireccion().getCoordenada() != null) {
-                    this.latitud = recinto.getDireccion().getCoordenada().getLatitud();
-                    this.longitud = recinto.getDireccion().getCoordenada().getLongitud();
-                }
             }
 
-            if (recinto.getUsuario() != null) {
-                this.usuarioId = recinto.getUsuario().getId();
-                this.usuarioEmail = recinto.getUsuario().getEmail();
-                this.usuarioNombre = recinto.getUsuario().getNombre() + " " + recinto.getUsuario().getApellidoPaterno();
-            }
-
-            if (recinto.getCanchas() != null) {
-                this.cantidadCanchas = recinto.getCanchas().size();
-            } else {
+            try {
+                this.cantidadCanchas = recinto.getCanchas() != null
+                        ? recinto.getCanchas().size()
+                        : 0;
+            } catch (Exception e) {
                 this.cantidadCanchas = 0;
             }
+        }
+
+        private String nombreCompleto(Usuario usuario) {
+            String nombre = usuario.getNombre() != null ? usuario.getNombre() : "";
+            String segundoNombre = usuario.getSegundoNombre() != null ? " " + usuario.getSegundoNombre() : "";
+            String apellidoPaterno = usuario.getApellidoPaterno() != null ? " " + usuario.getApellidoPaterno() : "";
+            String apellidoMaterno = usuario.getApellidoMaterno() != null ? " " + usuario.getApellidoMaterno() : "";
+
+            return (nombre + segundoNombre + apellidoPaterno + apellidoMaterno).trim();
         }
 
         public Long getId() {
@@ -185,11 +213,23 @@ public class AdminRecintoController {
             return aprobado;
         }
 
+        public Long getUsuarioId() {
+            return usuarioId;
+        }
+
+        public String getUsuarioNombre() {
+            return usuarioNombre;
+        }
+
+        public String getUsuarioEmail() {
+            return usuarioEmail;
+        }
+
         public String getCalle() {
             return calle;
         }
 
-        public Integer getNumero() {
+        public String getNumero() {
             return numero;
         }
 
@@ -199,26 +239,6 @@ public class AdminRecintoController {
 
         public String getRegion() {
             return region;
-        }
-
-        public BigDecimal getLatitud() {
-            return latitud;
-        }
-
-        public BigDecimal getLongitud() {
-            return longitud;
-        }
-
-        public Long getUsuarioId() {
-            return usuarioId;
-        }
-
-        public String getUsuarioEmail() {
-            return usuarioEmail;
-        }
-
-        public String getUsuarioNombre() {
-            return usuarioNombre;
         }
 
         public Integer getCantidadCanchas() {
