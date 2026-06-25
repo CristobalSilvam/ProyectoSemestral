@@ -1,13 +1,17 @@
-#Documentos de entrega 2 en /docse2
-
-#swagger https://searchsport-backend.onrender.com/swagger-ui.html
-
 # SearchSport Backend
 
 Backend del proyecto **SearchSport**, desarrollado con **Spring Boot**.  
-Expone una API REST para autenticación de usuarios, gestión de recintos deportivos, canchas, reservas y roles de usuario.
+Expone una API REST para autenticación, gestión de usuarios, recintos deportivos, canchas, reservas y roles.
 
 El backend se conecta a una base de datos **MySQL alojada en Aiven** y está desplegado en **Render**.
+
+---
+
+## Enlaces del proyecto
+
+- Swagger producción: https://searchsport-backend.onrender.com/swagger-ui.html
+- Backend producción: https://searchsport-backend.onrender.com
+- Documentos de entrega 2: `/docse2`
 
 ---
 
@@ -20,10 +24,11 @@ El backend se conecta a una base de datos **MySQL alojada en Aiven** y está des
 - Spring Data JPA / Hibernate
 - MySQL
 - Maven
-- Docker
 - Render
 - Aiven MySQL
 - Swagger / OpenAPI
+- JUnit 5
+- Mockito
 
 ---
 
@@ -32,18 +37,21 @@ El backend se conecta a una base de datos **MySQL alojada en Aiven** y está des
 - Registro público de usuarios.
 - Login con JWT.
 - Retorno de rol de usuario en el login.
-- Control de navegación según rol:
-    - Cliente / usuario normal.
-    - Dueño de recinto.
-    - Administrador.
+- Control de acceso según rol.
 - Consulta pública de recintos.
 - Consulta pública de canchas.
 - Consulta pública de comunas.
 - Gestión de reservas autenticadas.
 - Visualización de reservas del usuario autenticado.
-- Cancelación y pago de reservas.
+- Cancelación de reservas.
+- Gestión administrativa de usuarios.
+- Gestión administrativa de recintos.
+- Aprobación y desaprobación de recintos.
+- Asignación de dueño a recinto.
 - Manejo de errores en formato JSON.
 - CORS configurado para frontend local y frontend desplegado en Vercel.
+
+> Nota: la integración con pasarela de pago queda considerada como mejora futura.
 
 ---
 
@@ -51,16 +59,16 @@ El backend se conecta a una base de datos **MySQL alojada en Aiven** y está des
 
 | Rol | ID | Descripción |
 |---|---:|---|
-| USER / Cliente | 1 | Usuario normal que puede registrarse, iniciar sesión y reservar canchas |
-| DUENO / Dueño | 2 | Usuario encargado de gestión de recintos |
-| ADMIN | 3 | Usuario administrador con acceso al panel admin |
+| CLIENTE | 1 | Usuario normal que puede registrarse, iniciar sesión y reservar canchas |
+| DUENO | 2 | Usuario encargado de la gestión de recintos |
+| ADMIN | 3 | Usuario administrador con acceso al panel administrativo |
 
 ---
 
 ## Estructura general del proyecto
 
 ```txt
-demo/
+ProyectoSemestral/
 ├── src/
 │   ├── main/
 │   │   ├── java/com/example/searchsport/
@@ -74,12 +82,9 @@ demo/
 │   │   │   └── util/
 │   │   └── resources/
 │   │       └── application.properties
+│   └── test/
+│       └── java/com/example/searchsport/
+│           ├── controller/
+│           └── DemoApplicationTests.java
 ├── pom.xml
-└── DockerFile
-
-correr spring boot en local
-./mvnw spring-boot:run
-
-test mockito
-./mvnw test
-
+└── Dockerfile

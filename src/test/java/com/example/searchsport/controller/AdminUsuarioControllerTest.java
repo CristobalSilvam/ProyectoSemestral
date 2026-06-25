@@ -56,9 +56,11 @@ class AdminUsuarioControllerTest {
         AdminUsuarioController.UsuarioResponse usuarioResponse = response.getBody().get(0);
 
         assertEquals(1L, usuarioResponse.getId());
+        assertEquals("11111111-1", usuarioResponse.getRut());
         assertEquals("Cristobal", usuarioResponse.getNombre());
+        assertEquals("Silva", usuarioResponse.getApellidoPaterno());
         assertEquals("cristobal@cliente.com", usuarioResponse.getEmail());
-        assertEquals(true, usuarioResponse.getActivo());
+        assertTrue(usuarioResponse.getActivo());
         assertEquals(1L, usuarioResponse.getRolId());
         assertEquals("CLIENTE", usuarioResponse.getRol());
 
@@ -84,21 +86,24 @@ class AdminUsuarioControllerTest {
         usuario.setActivo(true);
         usuario.setRol(rolCliente);
 
-        AdminUsuarioController.RolUpdateRequest request =
-                new AdminUsuarioController.RolUpdateRequest();
+        AdminUsuarioController.CambiarRolRequest request =
+                new AdminUsuarioController.CambiarRolRequest();
         request.setRolId(3L);
 
         when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
         when(rolRepository.findById(3L)).thenReturn(Optional.of(rolAdmin));
         when(usuarioRepository.save(usuario)).thenReturn(usuario);
 
-        ResponseEntity<AdminUsuarioController.UsuarioResponse> response =
-                adminUsuarioController.cambiarRol(1L, request);
+        ResponseEntity<?> response = adminUsuarioController.cambiarRol(1L, request);
 
         assertEquals(200, response.getStatusCode().value());
-        assertNotNull(response.getBody());
-        assertEquals(3L, response.getBody().getRolId());
-        assertEquals("ADMIN", response.getBody().getRol());
+        assertTrue(response.getBody() instanceof AdminUsuarioController.UsuarioResponse);
+
+        AdminUsuarioController.UsuarioResponse usuarioResponse =
+                (AdminUsuarioController.UsuarioResponse) response.getBody();
+
+        assertEquals(3L, usuarioResponse.getRolId());
+        assertEquals("ADMIN", usuarioResponse.getRol());
 
         verify(usuarioRepository, times(1)).findById(1L);
         verify(rolRepository, times(1)).findById(3L);
@@ -106,7 +111,7 @@ class AdminUsuarioControllerTest {
     }
 
     @Test
-    void desactivarUsuario_debeCambiarActivoAFalse() {
+    void eliminarUsuario_debeDesactivarUsuario() {
         Rol rolCliente = new Rol();
         rolCliente.setIdRol(1L);
         rolCliente.setNombre("CLIENTE");
@@ -123,7 +128,7 @@ class AdminUsuarioControllerTest {
         when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
         when(usuarioRepository.save(usuario)).thenReturn(usuario);
 
-        ResponseEntity<Void> response = adminUsuarioController.desactivarUsuario(1L);
+        ResponseEntity<?> response = adminUsuarioController.eliminarUsuario(1L);
 
         assertEquals(204, response.getStatusCode().value());
         assertFalse(usuario.getActivo());
