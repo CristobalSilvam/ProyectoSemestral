@@ -37,7 +37,9 @@ public class DisponibilidadService {
             return bloquesLibres;
         }
 
-        List<HorarioEspecial> bloqueos = horarioEspecialRepository.findByCanchaIdCanchaAndFecha(canchaId, fecha);
+        List<HorarioEspecial> bloqueos =
+                horarioEspecialRepository.findByCanchaIdCanchaAndFecha(canchaId, fecha);
+
         boolean diaCompletoBloqueado = bloqueos.stream()
                 .anyMatch(bloqueo -> Boolean.TRUE.equals(bloqueo.getEstaBloqueado()));
 
@@ -45,28 +47,65 @@ public class DisponibilidadService {
             return bloquesLibres;
         }
 
-        List<Reserva> reservasDelDia = reservaRepository.findByCanchaIdCanchaAndFechaUso(canchaId, fecha);
+        List<Reserva> reservasDelDia =
+                reservaRepository.findByCanchaIdCanchaAndFechaUso(canchaId, fecha)
+                        .stream()
+                        .filter(this::debeBloquearHorario)
+                        .toList();
 
         LocalTime horaActual = APERTURA;
         int diaSemana = fecha.getDayOfWeek().getValue();
 
         while (horaActual.isBefore(CIERRE)) {
             LocalTime horaFinBloque = horaActual.plusHours(1);
-            final LocalTime horaIteracion = horaActual;
+            final LocalTime horaInicioBloque = horaActual;
+            final LocalTime horaFinActual = horaFinBloque;
 
-            boolean estaReservado = reservasDelDia.stream().anyMatch(reserva ->
-                    horaIteracion.equals(reserva.getHoraInicio()) ||
-                            (horaIteracion.isAfter(reserva.getHoraInicio()) && horaIteracion.isBefore(reserva.getHoraFin()))
-            );
+            boolean estaReservado = reservasDelDia.stream()
+                    .anyMatch(reserva -> seCruzanHorarios(
+                            horaInicioBloque,
+                            horaFinActual,
+                            reserva.getHoraInicio(),
+                            reserva.getHoraFin()
+                    ));
 
             if (!estaReservado) {
-                BigDecimal precio = tarifaService.calcularPrecio(canchaId, diaSemana, horaIteracion);
-                bloquesLibres.add(new BloqueDisponibleDTO(horaIteracion, horaFinBloque, precio));
+                BigDecimal precio = tarifaService.calcularPrecio(canchaId, diaSemana, horaInicioBloque);
+                bloquesLibres.add(new BloqueDisponibleDTO(horaInicioBloque, horaFinBloque, precio));
             }
 
             horaActual = horaActual.plusHours(1);
         }
 
         return bloquesLibres;
+    }
+
+    private boolean seCruzanHorarios(
+            LocalTime inicioBloque,
+            LocalTime finBloque,
+            LocalTime inicioReserva,
+            LocalTime finReserva
+    ) {
+        if (inicioReserva == null || finReserva == null) {
+            return false;
+        }
+
+        return inicioBloque.isBefore(finReserva) && finBloque.isAfter(inicioReserva);
+    }
+
+    private boolean debeBloquearHorario(Reserva reserva) {
+        if (reserva == null || reserva.getEstado() == null) {
+            return true;
+        }
+
+        String estado = reserva.getEstado().getDescripcion();
+
+        if (estado == null) {
+            return true;
+        }
+
+        String estadoNormalizado = estado.toLowerCase();
+
+        return !estadoNormalizado.contains("cancel");
     }
 }

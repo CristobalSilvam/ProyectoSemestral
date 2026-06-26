@@ -1,6 +1,7 @@
 package com.example.searchsport.service;
 
 import com.example.searchsport.dto.BloqueDisponibleDTO;
+import com.example.searchsport.entity.EstadoReserva;
 import com.example.searchsport.entity.HorarioEspecial;
 import com.example.searchsport.entity.Reserva;
 import com.example.searchsport.repository.HorarioEspecialRepository;
@@ -204,6 +205,48 @@ class DisponibilidadServiceTest {
         verify(reservaRepository, times(1))
                 .findByCanchaIdCanchaAndFechaUso(canchaId, fecha);
         verify(tarifaService, times(13))
+                .calcularPrecio(eq(canchaId), eq(diaSemana), any(LocalTime.class));
+    }
+
+    @Test
+    void obtenerBloquesDisponibles_noDebeExcluirBloqueSiReservaEstaCancelada() {
+        Long canchaId = 1L;
+        LocalDate fecha = LocalDate.of(2026, 7, 10);
+        int diaSemana = fecha.getDayOfWeek().getValue();
+
+        EstadoReserva estadoCancelado = new EstadoReserva();
+        estadoCancelado.setDescripcion("CANCELADA");
+
+        Reserva reservaCancelada = new Reserva();
+        reservaCancelada.setHoraInicio(LocalTime.of(15, 0));
+        reservaCancelada.setHoraFin(LocalTime.of(16, 0));
+        reservaCancelada.setEstado(estadoCancelado);
+
+        when(horarioEspecialRepository.findByCanchaIdCanchaAndFecha(canchaId, fecha))
+                .thenReturn(List.of());
+
+        when(reservaRepository.findByCanchaIdCanchaAndFechaUso(canchaId, fecha))
+                .thenReturn(List.of(reservaCancelada));
+
+        when(tarifaService.calcularPrecio(eq(canchaId), eq(diaSemana), any(LocalTime.class)))
+                .thenReturn(new BigDecimal("30000"));
+
+        List<BloqueDisponibleDTO> bloques =
+                disponibilidadService.obtenerBloquesDisponibles(canchaId, fecha);
+
+        assertNotNull(bloques);
+        assertEquals(14, bloques.size());
+
+        boolean contieneBloque15 = bloques.stream()
+                .anyMatch(bloque -> bloque.getHoraInicio().equals(LocalTime.of(15, 0)));
+
+        assertTrue(contieneBloque15);
+
+        verify(horarioEspecialRepository, times(1))
+                .findByCanchaIdCanchaAndFecha(canchaId, fecha);
+        verify(reservaRepository, times(1))
+                .findByCanchaIdCanchaAndFechaUso(canchaId, fecha);
+        verify(tarifaService, times(14))
                 .calcularPrecio(eq(canchaId), eq(diaSemana), any(LocalTime.class));
     }
 }

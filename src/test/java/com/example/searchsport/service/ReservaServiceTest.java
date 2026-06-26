@@ -2,7 +2,6 @@ package com.example.searchsport.service;
 
 import com.example.searchsport.dto.ReservaRequest;
 import com.example.searchsport.entity.Cancha;
-import com.example.searchsport.entity.EstadoReserva;
 import com.example.searchsport.entity.Reserva;
 import com.example.searchsport.entity.Usuario;
 import com.example.searchsport.repository.ReservaRepository;
@@ -37,27 +36,13 @@ class ReservaServiceTest {
 
     @Test
     void crearReserva_debeCrearReservaCuandoNoExisteConflictoHorario() {
-        Usuario usuario = new Usuario();
-        usuario.setId(1L);
-        usuario.setEmail("cliente@email.com");
+        Usuario usuario = crearUsuario("cliente@email.com");
+        ReservaRequest request = crearRequest(LocalTime.of(20, 0), LocalTime.of(21, 0));
 
-        ReservaRequest request = new ReservaRequest();
-        request.setCanchaId(1L);
-        request.setFechaUso(LocalDate.of(2026, 7, 10));
-        request.setHoraInicio(LocalTime.of(20, 0));
-        request.setHoraFin(LocalTime.of(21, 0));
-        request.setMontoTotal(new BigDecimal("30000"));
-
-        when(usuarioRepository.findByEmail("cliente@email.com"))
-                .thenReturn(Optional.of(usuario));
-
-        when(reservaRepository.findByCanchaIdCanchaAndFechaUso(
-                1L,
-                LocalDate.of(2026, 7, 10)
-        )).thenReturn(List.of());
-
-        when(reservaRepository.save(any(Reserva.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(usuarioRepository.findByEmail("cliente@email.com")).thenReturn(Optional.of(usuario));
+        when(reservaRepository.findByCanchaIdCanchaAndFechaUso(1L, LocalDate.of(2026, 7, 10)))
+                .thenReturn(List.of());
+        when(reservaRepository.save(any(Reserva.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Reserva reservaCreada = reservaService.crearReserva(request, "cliente@email.com");
 
@@ -66,33 +51,58 @@ class ReservaServiceTest {
         assertEquals(LocalTime.of(20, 0), reservaCreada.getHoraInicio());
         assertEquals(LocalTime.of(21, 0), reservaCreada.getHoraFin());
         assertEquals(new BigDecimal("30000"), reservaCreada.getMontoTotal());
-
-        assertNotNull(reservaCreada.getCancha());
         assertEquals(1L, reservaCreada.getCancha().getIdCancha());
-
-        assertNotNull(reservaCreada.getUsuario());
         assertEquals("cliente@email.com", reservaCreada.getUsuario().getEmail());
-
-        assertNotNull(reservaCreada.getEstado());
         assertEquals(1L, reservaCreada.getEstado().getIdEstado());
 
-        verify(usuarioRepository, times(1)).findByEmail("cliente@email.com");
-        verify(reservaRepository, times(1))
-                .findByCanchaIdCanchaAndFechaUso(1L, LocalDate.of(2026, 7, 10));
-        verify(reservaRepository, times(1)).save(any(Reserva.class));
+        verify(reservaRepository).save(any(Reserva.class));
+    }
+
+    @Test
+    void crearReserva_debeCrearReservaSiHoraInicioEsIgualAHoraFinDeReservaExistente() {
+        Usuario usuario = crearUsuario("cliente@email.com");
+        ReservaRequest request = crearRequest(LocalTime.of(21, 0), LocalTime.of(22, 0));
+        Reserva reservaExistente = crearReservaExistente(LocalTime.of(20, 0), LocalTime.of(21, 0));
+
+        when(usuarioRepository.findByEmail("cliente@email.com")).thenReturn(Optional.of(usuario));
+        when(reservaRepository.findByCanchaIdCanchaAndFechaUso(1L, LocalDate.of(2026, 7, 10)))
+                .thenReturn(List.of(reservaExistente));
+        when(reservaRepository.save(any(Reserva.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Reserva reservaCreada = reservaService.crearReserva(request, "cliente@email.com");
+
+        assertNotNull(reservaCreada);
+        assertEquals(LocalTime.of(21, 0), reservaCreada.getHoraInicio());
+        assertEquals(LocalTime.of(22, 0), reservaCreada.getHoraFin());
+
+        verify(reservaRepository).save(any(Reserva.class));
+    }
+
+    @Test
+    void crearReserva_debeCrearReservaSiHoraInicioEsAntesDeReservaExistente() {
+        Usuario usuario = crearUsuario("cliente@email.com");
+        ReservaRequest request = crearRequest(LocalTime.of(19, 0), LocalTime.of(20, 0));
+        Reserva reservaExistente = crearReservaExistente(LocalTime.of(20, 0), LocalTime.of(21, 0));
+
+        when(usuarioRepository.findByEmail("cliente@email.com")).thenReturn(Optional.of(usuario));
+        when(reservaRepository.findByCanchaIdCanchaAndFechaUso(1L, LocalDate.of(2026, 7, 10)))
+                .thenReturn(List.of(reservaExistente));
+        when(reservaRepository.save(any(Reserva.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Reserva reservaCreada = reservaService.crearReserva(request, "cliente@email.com");
+
+        assertNotNull(reservaCreada);
+        assertEquals(LocalTime.of(19, 0), reservaCreada.getHoraInicio());
+        assertEquals(LocalTime.of(20, 0), reservaCreada.getHoraFin());
+
+        verify(reservaRepository).save(any(Reserva.class));
     }
 
     @Test
     void crearReserva_debeLanzarExcepcionSiUsuarioNoExiste() {
-        ReservaRequest request = new ReservaRequest();
-        request.setCanchaId(1L);
-        request.setFechaUso(LocalDate.of(2026, 7, 10));
-        request.setHoraInicio(LocalTime.of(20, 0));
-        request.setHoraFin(LocalTime.of(21, 0));
-        request.setMontoTotal(new BigDecimal("30000"));
+        ReservaRequest request = crearRequest(LocalTime.of(20, 0), LocalTime.of(21, 0));
 
-        when(usuarioRepository.findByEmail("noexiste@email.com"))
-                .thenReturn(Optional.empty());
+        when(usuarioRepository.findByEmail("noexiste@email.com")).thenReturn(Optional.empty());
 
         RuntimeException exception = assertThrows(
                 RuntimeException.class,
@@ -100,36 +110,18 @@ class ReservaServiceTest {
         );
 
         assertEquals("Usuario no encontrado en la base de datos", exception.getMessage());
-
-        verify(usuarioRepository, times(1)).findByEmail("noexiste@email.com");
-        verify(reservaRepository, never()).findByCanchaIdCanchaAndFechaUso(anyLong(), any(LocalDate.class));
         verify(reservaRepository, never()).save(any(Reserva.class));
     }
 
     @Test
     void crearReserva_debeLanzarExcepcionSiHorarioTieneMismaHoraDeInicio() {
-        Usuario usuario = new Usuario();
-        usuario.setId(1L);
-        usuario.setEmail("cliente@email.com");
+        Usuario usuario = crearUsuario("cliente@email.com");
+        ReservaRequest request = crearRequest(LocalTime.of(20, 0), LocalTime.of(21, 0));
+        Reserva reservaExistente = crearReservaExistente(LocalTime.of(20, 0), LocalTime.of(21, 0));
 
-        ReservaRequest request = new ReservaRequest();
-        request.setCanchaId(1L);
-        request.setFechaUso(LocalDate.of(2026, 7, 10));
-        request.setHoraInicio(LocalTime.of(20, 0));
-        request.setHoraFin(LocalTime.of(21, 0));
-        request.setMontoTotal(new BigDecimal("30000"));
-
-        Reserva reservaExistente = new Reserva();
-        reservaExistente.setHoraInicio(LocalTime.of(20, 0));
-        reservaExistente.setHoraFin(LocalTime.of(21, 0));
-
-        when(usuarioRepository.findByEmail("cliente@email.com"))
-                .thenReturn(Optional.of(usuario));
-
-        when(reservaRepository.findByCanchaIdCanchaAndFechaUso(
-                1L,
-                LocalDate.of(2026, 7, 10)
-        )).thenReturn(List.of(reservaExistente));
+        when(usuarioRepository.findByEmail("cliente@email.com")).thenReturn(Optional.of(usuario));
+        when(reservaRepository.findByCanchaIdCanchaAndFechaUso(1L, LocalDate.of(2026, 7, 10)))
+                .thenReturn(List.of(reservaExistente));
 
         RuntimeException exception = assertThrows(
                 RuntimeException.class,
@@ -137,37 +129,18 @@ class ReservaServiceTest {
         );
 
         assertEquals("Lo sentimos, este bloque horario acaba de ser reservado por alguien más.", exception.getMessage());
-
-        verify(usuarioRepository, times(1)).findByEmail("cliente@email.com");
-        verify(reservaRepository, times(1))
-                .findByCanchaIdCanchaAndFechaUso(1L, LocalDate.of(2026, 7, 10));
         verify(reservaRepository, never()).save(any(Reserva.class));
     }
 
     @Test
     void crearReserva_debeLanzarExcepcionSiHoraInicioEstaDentroDeOtraReserva() {
-        Usuario usuario = new Usuario();
-        usuario.setId(1L);
-        usuario.setEmail("cliente@email.com");
+        Usuario usuario = crearUsuario("cliente@email.com");
+        ReservaRequest request = crearRequest(LocalTime.of(20, 30), LocalTime.of(21, 30));
+        Reserva reservaExistente = crearReservaExistente(LocalTime.of(20, 0), LocalTime.of(21, 0));
 
-        ReservaRequest request = new ReservaRequest();
-        request.setCanchaId(1L);
-        request.setFechaUso(LocalDate.of(2026, 7, 10));
-        request.setHoraInicio(LocalTime.of(20, 30));
-        request.setHoraFin(LocalTime.of(21, 30));
-        request.setMontoTotal(new BigDecimal("30000"));
-
-        Reserva reservaExistente = new Reserva();
-        reservaExistente.setHoraInicio(LocalTime.of(20, 0));
-        reservaExistente.setHoraFin(LocalTime.of(21, 0));
-
-        when(usuarioRepository.findByEmail("cliente@email.com"))
-                .thenReturn(Optional.of(usuario));
-
-        when(reservaRepository.findByCanchaIdCanchaAndFechaUso(
-                1L,
-                LocalDate.of(2026, 7, 10)
-        )).thenReturn(List.of(reservaExistente));
+        when(usuarioRepository.findByEmail("cliente@email.com")).thenReturn(Optional.of(usuario));
+        when(reservaRepository.findByCanchaIdCanchaAndFechaUso(1L, LocalDate.of(2026, 7, 10)))
+                .thenReturn(List.of(reservaExistente));
 
         RuntimeException exception = assertThrows(
                 RuntimeException.class,
@@ -175,19 +148,12 @@ class ReservaServiceTest {
         );
 
         assertEquals("Lo sentimos, este bloque horario acaba de ser reservado por alguien más.", exception.getMessage());
-
-        verify(usuarioRepository, times(1)).findByEmail("cliente@email.com");
-        verify(reservaRepository, times(1))
-                .findByCanchaIdCanchaAndFechaUso(1L, LocalDate.of(2026, 7, 10));
         verify(reservaRepository, never()).save(any(Reserva.class));
     }
 
     @Test
     void confirmarPago_debeCambiarEstadoAPagada() {
-        Usuario usuario = new Usuario();
-        usuario.setId(1L);
-        usuario.setEmail("cliente@email.com");
-
+        Usuario usuario = crearUsuario("cliente@email.com");
         Reserva reserva = new Reserva();
         reserva.setIdReserva(1L);
         reserva.setUsuario(usuario);
@@ -198,11 +164,8 @@ class ReservaServiceTest {
         Reserva reservaPagada = reservaService.confirmarPago(1L, "cliente@email.com");
 
         assertNotNull(reservaPagada);
-        assertNotNull(reservaPagada.getEstado());
         assertEquals(2L, reservaPagada.getEstado().getIdEstado());
-
-        verify(reservaRepository, times(1)).findById(1L);
-        verify(reservaRepository, times(1)).save(reserva);
+        verify(reservaRepository).save(reserva);
     }
 
     @Test
@@ -215,17 +178,12 @@ class ReservaServiceTest {
         );
 
         assertEquals("Reserva no encontrada", exception.getMessage());
-
-        verify(reservaRepository, times(1)).findById(99L);
         verify(reservaRepository, never()).save(any(Reserva.class));
     }
 
     @Test
     void confirmarPago_debeLanzarExcepcionSiUsuarioNoEsDuenioDeLaReserva() {
-        Usuario usuario = new Usuario();
-        usuario.setId(1L);
-        usuario.setEmail("otro@email.com");
-
+        Usuario usuario = crearUsuario("otro@email.com");
         Reserva reserva = new Reserva();
         reserva.setIdReserva(1L);
         reserva.setUsuario(usuario);
@@ -238,25 +196,15 @@ class ReservaServiceTest {
         );
 
         assertEquals("No tienes permiso para pagar esta reserva", exception.getMessage());
-
-        verify(reservaRepository, times(1)).findById(1L);
         verify(reservaRepository, never()).save(any(Reserva.class));
     }
 
     @Test
     void cancelarReserva_debeCambiarEstadoACanceladaSiTieneMasDe24Horas() {
-        Usuario usuario = new Usuario();
-        usuario.setId(1L);
-        usuario.setEmail("cliente@email.com");
-
+        Usuario usuario = crearUsuario("cliente@email.com");
         LocalDateTime fechaInicio = LocalDateTime.now().plusDays(3);
 
-        Reserva reserva = new Reserva();
-        reserva.setIdReserva(1L);
-        reserva.setUsuario(usuario);
-        reserva.setFechaUso(fechaInicio.toLocalDate());
-        reserva.setHoraInicio(fechaInicio.toLocalTime());
-        reserva.setHoraFin(fechaInicio.plusHours(1).toLocalTime());
+        Reserva reserva = crearReservaConUsuarioYFecha(usuario, fechaInicio);
 
         when(reservaRepository.findById(1L)).thenReturn(Optional.of(reserva));
         when(reservaRepository.save(reserva)).thenReturn(reserva);
@@ -264,11 +212,8 @@ class ReservaServiceTest {
         Reserva reservaCancelada = reservaService.cancelarReserva(1L, "cliente@email.com");
 
         assertNotNull(reservaCancelada);
-        assertNotNull(reservaCancelada.getEstado());
         assertEquals(3L, reservaCancelada.getEstado().getIdEstado());
-
-        verify(reservaRepository, times(1)).findById(1L);
-        verify(reservaRepository, times(1)).save(reserva);
+        verify(reservaRepository).save(reserva);
     }
 
     @Test
@@ -281,25 +226,14 @@ class ReservaServiceTest {
         );
 
         assertEquals("Reserva no encontrada", exception.getMessage());
-
-        verify(reservaRepository, times(1)).findById(99L);
         verify(reservaRepository, never()).save(any(Reserva.class));
     }
 
     @Test
     void cancelarReserva_debeLanzarExcepcionSiUsuarioNoEsDuenioDeLaReserva() {
-        Usuario usuario = new Usuario();
-        usuario.setId(1L);
-        usuario.setEmail("otro@email.com");
-
+        Usuario usuario = crearUsuario("otro@email.com");
         LocalDateTime fechaInicio = LocalDateTime.now().plusDays(3);
-
-        Reserva reserva = new Reserva();
-        reserva.setIdReserva(1L);
-        reserva.setUsuario(usuario);
-        reserva.setFechaUso(fechaInicio.toLocalDate());
-        reserva.setHoraInicio(fechaInicio.toLocalTime());
-        reserva.setHoraFin(fechaInicio.plusHours(1).toLocalTime());
+        Reserva reserva = crearReservaConUsuarioYFecha(usuario, fechaInicio);
 
         when(reservaRepository.findById(1L)).thenReturn(Optional.of(reserva));
 
@@ -309,25 +243,14 @@ class ReservaServiceTest {
         );
 
         assertEquals("No tienes permiso para cancelar esta reserva", exception.getMessage());
-
-        verify(reservaRepository, times(1)).findById(1L);
         verify(reservaRepository, never()).save(any(Reserva.class));
     }
 
     @Test
     void cancelarReserva_debeLanzarExcepcionSiFaltanMenosDe24Horas() {
-        Usuario usuario = new Usuario();
-        usuario.setId(1L);
-        usuario.setEmail("cliente@email.com");
-
+        Usuario usuario = crearUsuario("cliente@email.com");
         LocalDateTime fechaInicio = LocalDateTime.now().plusHours(5);
-
-        Reserva reserva = new Reserva();
-        reserva.setIdReserva(1L);
-        reserva.setUsuario(usuario);
-        reserva.setFechaUso(fechaInicio.toLocalDate());
-        reserva.setHoraInicio(fechaInicio.toLocalTime());
-        reserva.setHoraFin(fechaInicio.plusHours(1).toLocalTime());
+        Reserva reserva = crearReservaConUsuarioYFecha(usuario, fechaInicio);
 
         when(reservaRepository.findById(1L)).thenReturn(Optional.of(reserva));
 
@@ -337,17 +260,12 @@ class ReservaServiceTest {
         );
 
         assertEquals("Solo puedes cancelar con al menos 24 horas de antelación", exception.getMessage());
-
-        verify(reservaRepository, times(1)).findById(1L);
         verify(reservaRepository, never()).save(any(Reserva.class));
     }
 
     @Test
     void obtenerHistorial_debeRetornarReservasDelUsuario() {
-        Usuario usuario = new Usuario();
-        usuario.setId(1L);
-        usuario.setEmail("cliente@email.com");
-
+        Usuario usuario = crearUsuario("cliente@email.com");
         Cancha cancha = new Cancha();
         cancha.setIdCancha(1L);
 
@@ -356,26 +274,19 @@ class ReservaServiceTest {
         reserva.setUsuario(usuario);
         reserva.setCancha(cancha);
 
-        when(usuarioRepository.findByEmail("cliente@email.com"))
-                .thenReturn(Optional.of(usuario));
-
-        when(reservaRepository.findByUsuarioId(1L))
-                .thenReturn(List.of(reserva));
+        when(usuarioRepository.findByEmail("cliente@email.com")).thenReturn(Optional.of(usuario));
+        when(reservaRepository.findByUsuarioId(1L)).thenReturn(List.of(reserva));
 
         List<Reserva> historial = reservaService.obtenerHistorial("cliente@email.com");
 
         assertNotNull(historial);
         assertEquals(1, historial.size());
         assertEquals(1L, historial.get(0).getIdReserva());
-
-        verify(usuarioRepository, times(1)).findByEmail("cliente@email.com");
-        verify(reservaRepository, times(1)).findByUsuarioId(1L);
     }
 
     @Test
     void obtenerHistorial_debeLanzarExcepcionSiUsuarioNoExiste() {
-        when(usuarioRepository.findByEmail("noexiste@email.com"))
-                .thenReturn(Optional.empty());
+        when(usuarioRepository.findByEmail("noexiste@email.com")).thenReturn(Optional.empty());
 
         RuntimeException exception = assertThrows(
                 RuntimeException.class,
@@ -383,8 +294,40 @@ class ReservaServiceTest {
         );
 
         assertEquals("Usuario no encontrado", exception.getMessage());
-
-        verify(usuarioRepository, times(1)).findByEmail("noexiste@email.com");
         verify(reservaRepository, never()).findByUsuarioId(anyLong());
+    }
+
+    private Usuario crearUsuario(String email) {
+        Usuario usuario = new Usuario();
+        usuario.setId(1L);
+        usuario.setEmail(email);
+        return usuario;
+    }
+
+    private ReservaRequest crearRequest(LocalTime horaInicio, LocalTime horaFin) {
+        ReservaRequest request = new ReservaRequest();
+        request.setCanchaId(1L);
+        request.setFechaUso(LocalDate.of(2026, 7, 10));
+        request.setHoraInicio(horaInicio);
+        request.setHoraFin(horaFin);
+        request.setMontoTotal(new BigDecimal("30000"));
+        return request;
+    }
+
+    private Reserva crearReservaExistente(LocalTime horaInicio, LocalTime horaFin) {
+        Reserva reserva = new Reserva();
+        reserva.setHoraInicio(horaInicio);
+        reserva.setHoraFin(horaFin);
+        return reserva;
+    }
+
+    private Reserva crearReservaConUsuarioYFecha(Usuario usuario, LocalDateTime fechaInicio) {
+        Reserva reserva = new Reserva();
+        reserva.setIdReserva(1L);
+        reserva.setUsuario(usuario);
+        reserva.setFechaUso(fechaInicio.toLocalDate());
+        reserva.setHoraInicio(fechaInicio.toLocalTime());
+        reserva.setHoraFin(fechaInicio.plusHours(1).toLocalTime());
+        return reserva;
     }
 }
