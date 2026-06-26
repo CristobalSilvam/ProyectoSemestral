@@ -55,8 +55,7 @@ Thumbs.db
 .vscode/
 
 # Variables de entorno / secretos
-.env
-.env.local
+
 
 # Logs
 *.log
