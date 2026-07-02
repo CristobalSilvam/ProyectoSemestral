@@ -55,10 +55,13 @@ public class SecurityConfig {
                         // Preflight CORS
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        // Rutas GET públicas para frontend
+                        // Rutas GET públicas para frontend / mapa
                         .requestMatchers(HttpMethod.GET, "/api/recintos/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/comunas/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/canchas/**").permitAll()
+
+                        // MercadoPago temporalmente público para pruebas
+                        .requestMatchers("/api/mercadopago/**").permitAll()
 
                         // Rutas admin: solo usuarios con rol ADMIN
                         .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
