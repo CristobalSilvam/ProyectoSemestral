@@ -1,10 +1,22 @@
 package com.example.searchsport.controller;
 
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.example.searchsport.dto.BloqueDisponibleDTO;
@@ -13,10 +25,6 @@ import com.example.searchsport.entity.Cancha;
 import com.example.searchsport.repository.CanchaRepository;
 import com.example.searchsport.service.CanchaService;
 import com.example.searchsport.service.DisponibilidadService;
-
-import java.util.Map;
-import java.time.LocalDate;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/canchas")
@@ -63,21 +71,18 @@ public class CanchaController {
 
 
     // MÉTODOS GET 
-    // GET /api/canchas
     @GetMapping
     public ResponseEntity<List<Cancha>> listarCanchas() {
         List<Cancha> canchas = canchaRepository.findAll();
         return ResponseEntity.ok(canchas);
     }
 
-    // GET /api/canchas/{id}
-    @GetMapping("/{id}")
-    public ResponseEntity<Cancha> obtenerCanchaPorId(@PathVariable Long id) {
-        return canchaRepository.findById(id)
-                .map(cancha -> ResponseEntity.ok(cancha))
-                .orElse(ResponseEntity.notFound().build());
+    // GET /api/canchas/recinto/{recintoId}
+    @GetMapping("/recinto/{recintoId}")
+    public ResponseEntity<List<Cancha>> listarCanchasPorRecinto(@PathVariable Long recintoId) {
+        List<Cancha> canchas = canchaRepository.findByRecintoId(recintoId);
+        return ResponseEntity.ok(canchas);
     }
-
     // GET /api/canchas/{id}/disponibilidad?fecha=YYYY-MM-DD
     @GetMapping("/{id}/disponibilidad")
     public ResponseEntity<List<BloqueDisponibleDTO>> consultarDisponibilidad(
@@ -103,4 +108,11 @@ public class CanchaController {
             return ResponseEntity.ok(cancha);
         }).orElse(ResponseEntity.notFound().build());
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> eliminarCancha(@PathVariable Long id) {
+        canchaRepository.deleteById(id);
+        return ResponseEntity.ok().build();
+    }
+
 }

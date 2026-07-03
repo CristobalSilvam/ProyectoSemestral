@@ -1,19 +1,21 @@
 package com.example.searchsport.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
-
-import com.example.searchsport.entity.Imagen;
-import com.example.searchsport.entity.Recinto;
-import com.example.searchsport.repository.ImagenRepository;
-import com.example.searchsport.repository.RecintoRepository;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.UUID;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.example.searchsport.dto.ImagenResponseDTO;
+import com.example.searchsport.entity.Imagen;
+import com.example.searchsport.entity.Recinto;
+import com.example.searchsport.repository.ImagenRepository;
+import com.example.searchsport.repository.RecintoRepository;
 
 @Service
 public class ImagenService {
@@ -26,6 +28,14 @@ public class ImagenService {
 
     // Carpeta donde se guardarán físicamente las fotos
     private final String UPLOAD_DIR = "uploads/";
+
+    public List<ImagenResponseDTO> obtenerImagenesPorRecinto(Long recintoId) {
+        return imagenRepository.findByRecintoId(recintoId)
+                .stream()
+                .map(img -> new ImagenResponseDTO(img.getIdImg(), img.getUrl()))
+                .toList();
+    }
+    
 
     public Imagen subirImagen(Long recintoId, MultipartFile archivo) throws IOException {
         
@@ -63,5 +73,9 @@ public class ImagenService {
         nuevaImagen.setRecinto(recinto);
 
         return imagenRepository.save(nuevaImagen);
+    }
+    public void eliminarImagen(Long idImagen) {
+        // Asumiendo que tu repositorio se llama imagenRepository
+        imagenRepository.deleteById(idImagen);
     }
 }
