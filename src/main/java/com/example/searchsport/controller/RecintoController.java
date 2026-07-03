@@ -33,6 +33,9 @@ public class RecintoController {
     @Autowired
     private RecintoRepository recintoRepository;
 
+    @Autowired
+    private com.example.searchsport.service.ImagenService imagenService;
+
     // 1. Obtener mi recinto EXACTO (Por llave foránea)
     @GetMapping("/mi-recinto")
     public ResponseEntity<?> obtenerMiRecinto() {
@@ -102,5 +105,18 @@ public class RecintoController {
 
         List<RecintoMapaDTO> resultados = recintoService.buscarParaMapa(deporte, precioMax);
         return ResponseEntity.ok(resultados);
+    }
+    
+    @PostMapping("/{id}/imagenes")
+    public ResponseEntity<?> subirImagenRecinto(
+            @PathVariable Long id,
+            @RequestParam("file") org.springframework.web.multipart.MultipartFile archivo) {
+        try {
+            // Guardamos la imagen usando el servicio
+            com.example.searchsport.entity.Imagen imagenGuardada = imagenService.subirImagen(id, archivo);
+            return new ResponseEntity<>(imagenGuardada, HttpStatus.CREATED);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error al subir imagen: " + e.getMessage());
+        }
     }
 }

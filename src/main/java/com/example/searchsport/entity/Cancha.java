@@ -39,4 +39,21 @@ public class Cancha {
     @ManyToOne
     @JoinColumn(name = "deporte_id", nullable = false)
     private Deporte deporte;
+
+    @Column(name = "precio")
+    private Double precio;
+    
+    public Double getPrecio() {
+        return precio;
+    }
+    public void setPrecio(Double precio) {
+        this.precio = precio;
+    }
+
+    public void setNombreInterno(String nombreInterno) { this.nombreInterno = nombreInterno; }
+    public void setEsTechada(Boolean esTechada) { this.esTechada = esTechada; }
+    public void setTipoSuperficie(String tipoSuperficie) { this.tipoSuperficie = tipoSuperficie; }
+    public void setRecinto(Recinto recinto) { this.recinto = recinto; }
+    public void setDeporte(Deporte deporte) { this.deporte = deporte; }
+
 }

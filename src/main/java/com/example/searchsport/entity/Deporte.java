@@ -20,4 +20,6 @@ public class Deporte {
 
     @Column(nullable = false, length = 50)
     private String nombre;
+
+    public void setIdDeporte(Long idDeporte) { this.idDeporte = idDeporte; }
 }

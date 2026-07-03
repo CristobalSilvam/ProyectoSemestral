@@ -60,6 +60,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/comunas/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/canchas/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/disponibilidad/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/deportes/**").permitAll()
+
 
                         // MercadoPago público para crear preferencia.
                         // La confirmación real del pago sigue protegida en /api/reservas/{id}/pago.

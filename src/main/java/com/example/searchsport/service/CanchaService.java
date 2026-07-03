@@ -20,6 +20,8 @@ public class CanchaService {
         cancha.setEsTechada(request.getEsTechada());
         cancha.setTipoSuperficie(request.getTipoSuperficie());
 
+        cancha.setPrecio(request.getPrecio());
+
         Recinto r = new Recinto();
         r.setId(request.getRecintoId());
         cancha.setRecinto(r);
