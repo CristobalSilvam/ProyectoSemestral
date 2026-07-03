@@ -24,6 +24,12 @@ public class MercadoPagoController {
     @Value("${mercadopago.access-token:}")
     private String accessToken;
 
+    @Value("${frontend.url:http://localhost:3000}")
+    private String frontendUrl;
+
+    @Value("${mercadopago.auto-return:false}")
+    private boolean autoReturn;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @PostMapping("/crear-preferencia")
@@ -32,6 +38,12 @@ public class MercadoPagoController {
             if (accessToken == null || accessToken.isBlank()) {
                 return ResponseEntity.status(500).body(Map.of(
                         "message", "Falta configurar mercadopago.access-token"
+                ));
+            }
+
+            if (request == null) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "message", "El body de la solicitud es obligatorio"
                 ));
             }
 
@@ -55,15 +67,38 @@ public class MercadoPagoController {
 
             int precioEntero = request.getPrecio().intValue();
 
+            String frontendBaseUrl = normalizarFrontendUrl();
+
             Map<String, Object> item = new HashMap<>();
             item.put("title", titulo);
             item.put("quantity", 1);
             item.put("currency_id", "CLP");
             item.put("unit_price", precioEntero);
 
+            Map<String, Object> backUrls = new HashMap<>();
+            backUrls.put("success", frontendBaseUrl + "/pago/exito?reservaId=" + request.getReservaId());
+            backUrls.put("failure", frontendBaseUrl + "/pago/error?reservaId=" + request.getReservaId());
+            backUrls.put("pending", frontendBaseUrl + "/pago/pendiente?reservaId=" + request.getReservaId());
+
+            Map<String, Object> metadata = new HashMap<>();
+            metadata.put("reservaId", request.getReservaId());
+
             Map<String, Object> body = new HashMap<>();
             body.put("items", List.of(item));
             body.put("external_reference", String.valueOf(request.getReservaId()));
+            body.put("metadata", metadata);
+            body.put("back_urls", backUrls);
+
+            /*
+             * En local debe quedar desactivado:
+             * mercadopago.auto-return=false
+             *
+             * En producción con frontend HTTPS público:
+             * MERCADOPAGO_AUTO_RETURN=true
+             */
+            if (autoReturn) {
+                body.put("auto_return", "approved");
+            }
 
             String jsonBody = objectMapper.writeValueAsString(body);
 
@@ -84,8 +119,8 @@ public class MercadoPagoController {
             String mercadoPagoBody = response.body();
 
             System.out.println("STATUS MERCADOPAGO: " + response.statusCode());
-            System.out.println("BODY MERCADOPAGO: " + mercadoPagoBody);
             System.out.println("REQUEST ENVIADO A MERCADOPAGO: " + jsonBody);
+            System.out.println("BODY MERCADOPAGO: " + mercadoPagoBody);
 
             Map<String, Object> responseBody = new HashMap<>();
 
@@ -111,9 +146,9 @@ public class MercadoPagoController {
             Object initPoint = responseBody.get("init_point");
             Object sandboxInitPoint = responseBody.get("sandbox_init_point");
 
-            if (id == null && initPoint == null && sandboxInitPoint == null) {
+            if (id == null || initPoint == null) {
                 Map<String, Object> error = new HashMap<>();
-                error.put("message", "MercadoPago respondió, pero no devolvió preferenceId ni init_point");
+                error.put("message", "MercadoPago respondió, pero no devolvió preferenceId o init_point");
                 error.put("status", response.statusCode());
                 error.put("bodyCrudo", mercadoPagoBody);
 
@@ -137,5 +172,19 @@ public class MercadoPagoController {
 
             return ResponseEntity.status(500).body(error);
         }
+    }
+
+    private String normalizarFrontendUrl() {
+        if (frontendUrl == null || frontendUrl.isBlank()) {
+            return "http://localhost:3000";
+        }
+
+        String url = frontendUrl.trim();
+
+        if (url.endsWith("/")) {
+            url = url.substring(0, url.length() - 1);
+        }
+
+        return url;
     }
 }

@@ -55,16 +55,18 @@ public class SecurityConfig {
                         // Preflight CORS
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        // Rutas GET públicas para frontend / mapa
+                        // Rutas GET públicas para frontend / mapa / disponibilidad
                         .requestMatchers(HttpMethod.GET, "/api/recintos/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/comunas/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/canchas/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/disponibilidad/**").permitAll()
 
-                        // MercadoPago temporalmente público para pruebas
+                        // MercadoPago público para crear preferencia.
+                        // La confirmación real del pago sigue protegida en /api/reservas/{id}/pago.
                         .requestMatchers("/api/mercadopago/**").permitAll()
 
-                        // Rutas admin: solo usuarios con rol ADMIN
-                        .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
+                        // Rutas admin
+                        .requestMatchers("/api/admin/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN")
 
                         // Todo lo demás requiere login/token
                         .anyRequest().authenticated()
