@@ -33,60 +33,79 @@ public class RecintoController {
     @Autowired
     private RecintoRepository recintoRepository;
 
-    @Autowired
-    private com.example.searchsport.service.ImagenService imagenService;
-
-    // 1. Obtener mi recinto EXACTO (Por llave foránea)
+    // 1. Obtener mi recinto EXACTO por llave foránea
     @GetMapping("/mi-recinto")
     public ResponseEntity<?> obtenerMiRecinto() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated() || authentication.getName().equals("anonymousUser")) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "No autenticado"));
+
+        if (
+                authentication == null ||
+                !authentication.isAuthenticated() ||
+                authentication.getName().equals("anonymousUser")
+        ) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
+                    "message", "No autenticado"
+            ));
         }
+
         String email = authentication.getName();
 
         Usuario dueno = usuarioRepository.findByEmail(email)
-            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
         if (dueno.getRol() == null || dueno.getRol().getIdRol() != 2L) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "No eres dueño"));
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
+                    "message", "No eres dueño"
+            ));
         }
 
-        // Búsqueda real y definitiva en la BD
         Optional<Recinto> miRecinto = recintoRepository.findByUsuario_Id(dueno.getId());
 
         if (miRecinto.isPresent()) {
             return ResponseEntity.ok(miRecinto.get());
-        } else {
-            return ResponseEntity.notFound().build();
         }
+
+        return ResponseEntity.notFound().build();
     }
 
-    // 2. CREACIÓN: Registrar un recinto y amarrarlo al Dueño
+    // 2. Crear un recinto y asociarlo al dueño autenticado
     @PostMapping
     public ResponseEntity<?> crearMiRecinto(@RequestBody RecintoRequest request) {
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            String email = authentication.getName();
-            Usuario dueno = usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-            // Se crea el recinto usando la lógica que ya tenías
+            if (
+                    authentication == null ||
+                    !authentication.isAuthenticated() ||
+                    authentication.getName().equals("anonymousUser")
+            ) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
+                        "message", "No autenticado"
+                ));
+            }
+
+            String email = authentication.getName();
+
+            Usuario dueno = usuarioRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
             Recinto nuevoRecinto = recintoService.crearRecinto(request);
 
-            // VINCULACIÓN: Le asignamos la cuenta del dueño y guardamos el cambio
             nuevoRecinto.setUsuario(dueno);
             recintoRepository.save(nuevoRecinto);
 
             return new ResponseEntity<>(nuevoRecinto, HttpStatus.CREATED);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Error al crear recinto: " + e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of(
+                    "message", "Error al crear recinto: " + e.getMessage()
+            ));
         }
     }
 
     @GetMapping
     public ResponseEntity<List<Recinto>> listarTodos() {
         List<Recinto> recintos = recintoService.obtenerTodos();
+
         return ResponseEntity.ok(recintos);
     }
 
@@ -101,22 +120,10 @@ public class RecintoController {
     @GetMapping("/search")
     public ResponseEntity<List<RecintoMapaDTO>> buscarRecintos(
             @RequestParam(required = false) String deporte,
-            @RequestParam(required = false) BigDecimal precioMax) {
-
+            @RequestParam(required = false) BigDecimal precioMax
+    ) {
         List<RecintoMapaDTO> resultados = recintoService.buscarParaMapa(deporte, precioMax);
+
         return ResponseEntity.ok(resultados);
-    }
-    
-    @PostMapping("/{id}/imagenes")
-    public ResponseEntity<?> subirImagenRecinto(
-            @PathVariable Long id,
-            @RequestParam("file") org.springframework.web.multipart.MultipartFile archivo) {
-        try {
-            // Guardamos la imagen usando el servicio
-            com.example.searchsport.entity.Imagen imagenGuardada = imagenService.subirImagen(id, archivo);
-            return new ResponseEntity<>(imagenGuardada, HttpStatus.CREATED);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Error al subir imagen: " + e.getMessage());
-        }
     }
 }
